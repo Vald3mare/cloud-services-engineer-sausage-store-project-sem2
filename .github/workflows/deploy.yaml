@@ -31,10 +31,6 @@ jobs:
           with:
             username: ${{ secrets.DOCKER_USER }}
             password: ${{ secrets.DOCKER_PASSWORD }}
-          # При помощи with передаём в action параметры username и password:
-          with:
-            username: ${{ secrets.DOCKER_USER }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
             # Хорошо ли держать логин и пароль прямо в коде workflow?
             # Нет, это нехорошо. Хранить пароль надо в Secrets.
         - name: Push Backend to DockerHub
