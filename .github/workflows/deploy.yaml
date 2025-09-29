@@ -97,11 +97,6 @@ jobs:
       needs: add_helm_chart_to_nexus
 
       steps:
-        name: Deploy Helm Chart To Kubernetes
-      runs-on: ubuntu-latest
-      needs: add_helm_chart_to_nexus
-
-      steps:
         - name: Check out the repo
           uses: actions/checkout@v3
 
