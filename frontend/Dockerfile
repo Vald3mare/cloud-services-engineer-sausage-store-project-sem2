@@ -4,10 +4,10 @@ WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci
+ENV NODE_OPTIONS="--openssl-legacy-provider"
 COPY . .
 
 RUN npm run build -- --prod
-
 
 FROM nginx:stable-alpine AS final
 
