@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-report
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: sausage-backend-report
+    app.kubernetes.io/component: backend-report
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  strategy:
+    type: {{ .Values.backend-report.strategy.type }}
+  replicas: {{ .Values.backend-report.replicas }}
+  selector:
+    matchLabels:
+      app: backend-report
+  template:
+    metadata:
+      labels:
+        app: backend-report
+    spec:
+      containers:
+      - name: backend-report
+        image: {{ .Values.backend-report.image }}
+        ports:
+          - containerPort: {{ .Values.backend-report.containerPort }}
+        env:
+          # PORT из ConfigMap
+          - name: PORT
+            valueFrom:
+              configMapKeyRef:
+                name: backend-report-configmap
+                key: PORT
+          - name: DB
+            valueFrom:
+              secretKeyRef:
+                name: backend-report-secret
+                key: DB
+        resources:
+          requests:
+            cpu: {{ .Values.backend-report.resources.requests.cpu }}
+            memory: {{ .Values.backend-report.resources.requests.memory }}
+          limits:
+            cpu: {{ .Values.backend-report.resources.limits.cpu }}
+            memory: {{ .Values.backend-report.resources.limits.memory }}

@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-init-{{ .Release.Name | trunc 4 }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "post-install" 
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": "hook-succeeded"
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mongo-shell
+        image: mongo:4.4
+        command: ["sh", "-c"]
+        args:
+          - |
+            sleep 10 && 
+            mongo "mongodb:{{ .Values.infra.mongodb.containerPort }}/admin" \
+                  -u {{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_USERNAME }} \
+                  -p {{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }} \
+                  --eval "db.createUser({ user: 'reporter', pwd: '{{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }}', roles: [{ role: 'readWrite', db: 'sausage-db' }] });"

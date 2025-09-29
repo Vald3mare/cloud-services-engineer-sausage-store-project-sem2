@@ -15,11 +15,12 @@ frontend:
   service:
     port: 80
   ingress:
-    host: YOUR_STUDENT_HOSTNAME.students-projects.ru # Корректный домен будет указан в задании
+    host: front-vald3mar.2sem.students-projects.ru # Корректный домен будет указан в задании
     path: /
     pathType: Prefix
+    tlsSecret: "2sem-students-projects-wildcard-secret"
   containerPort: 80
-  image: YOUR_DOCKERHUB/sausage-frontend:latest
+  image: valdmar918/sausage-frontend:1.0.0
   resources:
     requests:
       memory: "128Mi"
@@ -45,8 +46,8 @@ backend:
   revisionHistoryLimit: 15
   replicas: 1
   strategy:
-  ### Опишите стратегию RollingUpdate для бэкенда
-  image: YOUR_DOCKERHUB/sausage-backend:latest
+    type: RollingUpdate
+  image: valdmar918/sausage-backend:1.0.0
   imagePullPolicy: Always
   resources:
     requests:
@@ -57,11 +58,45 @@ backend:
       cpu: "1"
   containerPort: 8080
   livenessProbe:
-  ### Опишите LivenessProbe для бэкенда
+    path: /actuator/health
+    port: 8080
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 5
   vpa:
-  ### Опишите VPA для бэкенда
+    enabled: true
+    mode: "Auto"
+    updatePolicy:
+      updateMode: "Auto"
+    resourcePolicy:
+      containerPolicies:
+        - containerName: "*"
+          minAllowed:
+            cpu: "100m"
+            memory: "128Mi"
+          maxAllowed:
+            cpu: "1"
+            memory: "1Gi"
 
 backend-report:
+  replicas: 1
+  strategy:
+    type: Recreate 
+  containerPort: 8080 
+  image: valdmar918/sausage-backend-report:1.0.0
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "200m"
+      memory: "256Mi"
+  mongodbUri: "mongodb://{{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_USERNAME }}:{{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }}@mongodb:27017/sausage-db" 
+  hpa:
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 70
 ### Опишите значения для backend-report
 ### Приложение должно использовать стратегию Recreate
 ### Приложение использует переменную PORT - порт, на котором оно запустится и DB - Uri-подключение к mongodb. 
@@ -70,6 +105,7 @@ backend-report:
 
 infra:
   postgresql:
+    password: "sausagepassword"
   ### Опишите необходимые переменные для развертывания PostgresQL в кластере Kubernetes
   mongodb:
     env:

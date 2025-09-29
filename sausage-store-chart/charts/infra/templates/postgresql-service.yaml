@@ -1,15 +1,16 @@
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Service
 metadata:
-  name: postgresql-pvc
+  name: postgresql
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: postgresql
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: infra
 spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 1Gi
+  type: ClusterIP 
+  ports:
+    - port: 5432
+      targetPort: 5432
+  selector:
+    app: postgresql
