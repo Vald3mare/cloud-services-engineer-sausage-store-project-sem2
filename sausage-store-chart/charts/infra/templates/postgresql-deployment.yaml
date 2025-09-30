@@ -3,10 +3,6 @@ kind: Deployment
 metadata:
   name: postgresql
   namespace: {{ .Release.Namespace }}
-  labels:
-    app.kubernetes.ioio/name: postgresql
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: infra
 spec:
   replicas: 1
   selector:
@@ -19,28 +15,23 @@ spec:
     spec:
       containers:
       - name: postgresql
-        image: postgres:15-alpine 
+        image: postgres:15-alpine
         ports:
-          - containerPort: 5432
+        - containerPort: 5432
         env:
-          - name: POSTGRES_DB
-            value: "sausage_store"
-          - name: POSTGRES_USER
-            value: "sausage_user"
-          - name: POSTGRES_PASSWORD
-            # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
-            value: {{ .Values.postgresql.password | quote }} 
+        - name: POSTGRES_DB
+          value: "sausage_store"
+        - name: POSTGRES_USER
+          value: "sausage_user"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.postgresql.passwordSecret }}
+              key: {{ .Values.postgresql.passwordKey }}
         volumeMounts:
-          - name: postgres-storage
-            mountPath: /var/lib/postgresql/data 
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "512Mi"
-          limits:
-            cpu: "1"
-            memory: "1024Mi"
-      volumes:
         - name: postgres-storage
-          persistentVolumeClaim:
-            claimName: postgresql-pvc
+          mountPath: /var/lib/postgresql/data
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: postgresql-pvc

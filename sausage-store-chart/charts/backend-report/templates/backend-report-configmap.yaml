@@ -3,7 +3,5 @@ kind: ConfigMap
 metadata:
   name: backend-report-configmap
   namespace: {{ .Release.Namespace }}
-  labels:
-    app.kubernetes.io/component: backend-report
 data:
   PORT: {{ .Values.containerPort | quote }}

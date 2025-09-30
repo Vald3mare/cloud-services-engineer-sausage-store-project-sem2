@@ -1,3 +1,5 @@
+# sausage-store-chart/values.yaml
+
 global:
   imagePullPolicy: Always
   ###vault:
@@ -5,125 +7,75 @@ global:
   ###  name: vault
   ###  vaultToken: someToken
 
-
 frontend:
 ### В чарте frontend отсутствуют некоторые важные файлы. Поймите какие и опишите их.
   replicas: 1
-  revisionHistoryLimit: 15
-  strategy:
-    type: Recreate
+  containerPort: 80
+  image:
+    repository: valdmar918/sausage-frontend
+    tag: "1.0.0"
   service:
     port: 80
   ingress:
     host: front-vald3mar.2sem.students-projects.ru # Корректный домен будет указан в задании
     path: /
     pathType: Prefix
-    tlsSecret: "2sem-students-projects-wildcard-secret"
-  containerPort: 80
-  image: valdmar918/sausage-frontend:1.0.0
-  resources:
-    requests:
-      memory: "128Mi"
-      cpu: "100m"
-    limits:
-      memory: "128Mi"
-      cpu: "1"
-  nginxConf: nginx.conf
 
 backend:
-  annotations:
-    path: /actuator/prometheus
-    port: "8080"
-    scrape: "true"
-  env:
-    postgresUri: jdbc:postgresql://postgresql:5432/sausage-store
-    postgresUser: store
-    postgresPassword: storepassword
-    reportPath: /logs/reports
-    logPath: /logs
+  replicas: 1
+  containerPort: 8080
+  image:
+    repository: valdmar918/sausage-backend
+    tag: "1.0.0"
   service:
     port: 8080
-  revisionHistoryLimit: 15
-  replicas: 1
-  strategy:
-    type: RollingUpdate
-  image: valdmar918/sausage-backend:1.0.0
-  imagePullPolicy: Always
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "100m"
-    limits:
-      memory: "512Mi"
-      cpu: "1"
-  containerPort: 8080
-  livenessProbe:
-    path: /actuator/health
-    port: 8080
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    timeoutSeconds: 5
-    failureThreshold: 5
+  env:
+    postgresUser: sausage_user
+    postgresPasswordSecret: postgresql-secret
+    postgresPasswordKey: postgres-password
   vpa:
     enabled: true
-    mode: "Auto"
-    updatePolicy:
-      updateMode: "Auto"
-    resourcePolicy:
-      containerPolicies:
-        - containerName: "*"
-          minAllowed:
-            cpu: "100m"
-            memory: "128Mi"
-          maxAllowed:
-            cpu: "1"
-            memory: "1Gi"
+    updateMode: "Auto"
 
-backend-report:
+backend_report:
+### Опишите значения для backend-report
+### Приложение должно использовать стратегию Recreate
+### Приложение использует переменную PORT - порт, на котором оно запустится и DB - Uri-подключение к mongodb.
+### DB положите в Secret, PORT в ConfigMap
+### Опишите HPA для backend-report
   replicas: 1
   strategy:
-    type: Recreate 
-  containerPort: 8080 
-  image: valdmar918/sausage-backend-report:1.0.0
-  resources:
-    requests:
-      cpu: "100m"
-      memory: "128Mi"
-    limits:
-      cpu: "200m"
-      memory: "256Mi"
-  mongodbUri: "mongodb://{{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_USERNAME }}:{{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }}@mongodb:27017/sausage-db" 
+    type: Recreate
+  containerPort: 8080
+  image:
+    repository: valdmar918/sausage-backend-report
+    tag: "1.0.0"
   hpa:
+    enabled: true
     minReplicas: 1
     maxReplicas: 3
     targetCPUUtilizationPercentage: 70
-### Опишите значения для backend-report
-### Приложение должно использовать стратегию Recreate
-### Приложение использует переменную PORT - порт, на котором оно запустится и DB - Uri-подключение к mongodb. 
-### DB положите в Secret, PORT в ConfigMap
-### Опишите HPA для backend-report
 
 infra:
+### Опишите необходимые переменные для развертывания PostgresQL в кластере Kubernetes
   postgresql:
-    password: "sausagepassword"
-  ### Опишите необходимые переменные для развертывания PostgresQL в кластере Kubernetes
+    passwordSecret: postgresql-secret
+    passwordKey: postgres-password
+
   mongodb:
-  replicas: 1
-  containerPort: 27017
-
-  image:
-    repository: mongo
-    tag: "4.4"
-    pullPolicy: IfNotPresent
-  
-  auth:
-    username: "admin"
-    password: "changeme"
-
-  resources:
-    requests:
-      cpu: "200m"
-      memory: "256Mi"
-    limits:
-      cpu: "500m"
-      memory: "512Mi"
+    replicas: 1
+    containerPort: 27017
+    image:
+      repository: mongo
+      tag: "4.4"
+      pullPolicy: IfNotPresent
+    auth:
+      username: "admin"
+      password: "changeme"
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "256Mi"
+      limits:
+        cpu: "500m"
+        memory: "512Mi"

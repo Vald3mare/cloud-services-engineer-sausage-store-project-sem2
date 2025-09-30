@@ -3,10 +3,6 @@ kind: PersistentVolumeClaim
 metadata:
   name: postgresql-pvc
   namespace: {{ .Release.Namespace }}
-  labels:
-    app.kubernetes.io/name: postgresql
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/component: infra
 spec:
   accessModes:
     - ReadWriteOnce

@@ -1,17 +1,12 @@
-# sausage-store-chart/charts/backend-report/templates/backend-report-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend-report
   namespace: {{ .Release.Namespace }}
-  labels:
-    app.kubernetes.io/name: sausage-backend-report
-    app.kubernetes.io/component: backend-report
-    app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
+  replicas: {{ .Values.replicas }}
   strategy:
     type: {{ .Values.strategy.type }}
-  replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
       app: backend-report
@@ -24,22 +19,15 @@ spec:
       - name: backend-report
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         ports:
-          - containerPort: {{ .Values.containerPort }}
+        - containerPort: {{ .Values.containerPort }}
         env:
-          - name: PORT
-            valueFrom:
-              configMapKeyRef:
-                name: backend-report-configmap
-                key: PORT
-          - name: DB
-            valueFrom:
-              secretKeyRef:
-                name: backend-report-secret
-                key: DB
-        resources:
-          requests:
-            cpu: {{ .Values.resources.requests.cpu }}
-            memory: {{ .Values.resources.requests.memory }}
-          limits:
-            cpu: {{ .Values.resources.limits.cpu }}
-            memory: {{ .Values.resources.limits.memory }}
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-report-configmap
+              key: PORT
+        - name: DB
+          valueFrom:
+            secretKeyRef:
+              name: backend-report-secret
+              key: DB
