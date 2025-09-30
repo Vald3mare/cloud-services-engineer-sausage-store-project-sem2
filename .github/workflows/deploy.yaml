@@ -122,11 +122,9 @@ jobs:
           run: |
             export KUBECONFIG=kubeconfig.yaml 
             
-            # Обновление репозитория
             helm repo update
             
-            # Финальный деплой
-            helm upgrade --install sausage-store sausage-nexus/sausage-store-chart \
+            helm upgrade --install sausage-store sausage-nexus/sausage-store \
               --namespace ${{ env.SAUSAGE_STORE_NAMESPACE }} \
               --create-namespace \
               --set frontend.fqdn=front-vald3mar.2sem.students-projects.ru \
