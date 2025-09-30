@@ -91,10 +91,6 @@ jobs:
 
   # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
-      name: Deploy Helm Chart To Kubernetes
-      runs-on: ubuntu-latest
-      needs: add_helm_chart_to_nexus
-
       steps:
         - name: Check out the repo
           uses: actions/checkout@v3
@@ -103,14 +99,7 @@ jobs:
           uses: azure/setup-helm@v3
           with:
             version: v3.12.0
-
-        - name: Set Kubeconfig (Настройка доступа к кластеру)
-          run: |
-            echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
-            export KUBECONFIG=kubeconfig.yaml
-            chmod 600 kubeconfig.yaml
-            kubectl config get-contexts
-
+            
         - name: Add Nexus Helm Repository
           run: |
             helm repo add sausage-nexus ${{ env.NEXUS_HELM_REPO }} \
@@ -120,13 +109,22 @@ jobs:
 
         - name: Deploy Helm Chart (Установка/Обновление релиза)
           run: |
+            echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
+            export KUBECONFIG=kubeconfig.yaml
+            chmod 600 kubeconfig.yaml
+          
+            kubectl config get-contexts
+            
+            # 3. Обновление репозитория (повторно, на всякий случай)
+            helm repo update
+            
             helm upgrade --install sausage-store sausage-nexus/sausage-store-chart \
               --namespace ${{ env.SAUSAGE_STORE_NAMESPACE }} \
               --create-namespace \
               --set frontend.fqdn=front-vald3mar.2sem.students-projects.ru \
-              --set frontend.image.repository=${{ env.DOCKER_USERNAME }}/sausage-store/sausage-frontend \
+              --set frontend.image.repository=${{ secrets.DOCKER_USERNAME }}/sausage-frontend \
               --set frontend.image.tag=1.0.0 \
-              --set backend.image.repository=${{ env.DOCKER_USERNAME }}/sausage-store/sausage-backend \
+              --set backend.image.repository=${{ secrets.DOCKER_USERNAME }}/sausage-backend \
               --set backend.image.tag=1.0.0 \
-              --set backend-report.image.repository=${{ env.DOCKER_USERNAME }}/sausage-store/sausage-backend-report \
+              --set backend-report.image.repository=${{ secrets.DOCKER_USERNAME }}/sausage-backend-report \
               --set backend-report.image.tag=1.0.0 
