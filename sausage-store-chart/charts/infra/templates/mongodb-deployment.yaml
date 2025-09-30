@@ -5,10 +5,9 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: mongodb
-    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: infra
 spec:
-  replicas: 1
+  replicas: {{ .Values.mongodb.replicas }}
   selector:
     matchLabels:
       app: mongodb
@@ -19,18 +18,20 @@ spec:
     spec:
       containers:
       - name: mongodb
-        image: mongo:4.4
+        image: "{{ .Values.mongodb.image.repository }}:{{ .Values.mongodb.image.tag }}"
+        imagePullPolicy: {{ .Values.mongodb.image.pullPolicy }}
         ports:
-          - containerPort: {{ .Values.infra.mongodb.containerPort }}
+          - containerPort: {{ .Values.mongodb.containerPort }}
         env:
           - name: MONGO_INITDB_ROOT_USERNAME
-            value: {{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_USERNAME }}
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-secret
+                key: mongo-root-username
           - name: MONGO_INITDB_ROOT_PASSWORD
-            value: {{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }}
+            valueFrom:
+              secretKeyRef:
+                name: mongodb-secret
+                key: mongo-root-password
         resources:
-          requests:
-            cpu: "200m"
-            memory: "256Mi"
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
+{{ toYaml .Values.mongodb.resources | indent 10 }}
