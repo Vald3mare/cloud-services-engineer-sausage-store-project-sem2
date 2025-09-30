@@ -78,19 +78,15 @@ jobs:
 
         - name: Package Helm chart
           run: |
-            cd sausage-store-chart
-            helm dependency update
-            helm package .
+            helm dependency update ./sausage-store-chart/
+            helm package ./sausage-store-chart/ -d ./packeged/
 
         - name: Push Helm chart to Nexus
           run: |
-            helm plugin install https://github.com/chartmuseum/helm-push --version v0.10.0
-            helm repo add sausage-nexus-vald3mar ${{ env.NEXUS_HELM_REPO }} \
-              --username ${{ env.NEXUS_HELM_REPO_USER }} \
-              --password ${{ env.NEXUS_HELM_REPO_PASSWORD }}
-
-            cd sausage-store-chart
-            helm cm-push sausage-store-*.tgz sausage-nexus-vald3mar
+            CHART_FILE=$(ls ./packeged/*.tgz)
+            curl -u "$NEXUS_HELM_REPO_USER:$NEXUS_HELM_REPO_PASSWORD" \
+            --upload-file "$CHART_FILE" \
+            "$NEXUS_HELM_REPO/"
 
   # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
@@ -115,7 +111,7 @@ jobs:
 
         - name: Add Nexus Helm Repository
           run: |
-            helm repo add sausage-nexus ${{ env.NEXUS_HELM_REPO }}/repository/sausage-store-helm-vald3mar \
+            helm repo add sausage-nexus ${{ env.NEXUS_HELM_REPO }} \
               --username ${{ env.NEXUS_HELM_REPO_USER }} \
               --password ${{ env.NEXUS_HELM_REPO_PASSWORD }}
             helm repo update
