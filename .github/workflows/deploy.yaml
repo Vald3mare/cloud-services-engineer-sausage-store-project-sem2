@@ -76,15 +76,17 @@ jobs:
           with:
             version: v3.12.0
 
-        - name: Clean Helm cache and Update dependencies
+        - name: Clean Helm cache and Package chart
           run: |
+            rm -rf $HOME/.cache/helm/repository
+            
+
             rm -rf ./sausage-store-chart/charts/*.tgz
             rm -rf ./sausage-store-chart/Chart.lock
-            
+
             helm dependency update ./sausage-store-chart/
 
-        - name: Package Helm chart
-          run: |
+            mkdir -p ./packeged/
             helm package ./sausage-store-chart/ -d ./packeged/
 
         - name: Push Helm chart to Nexus
