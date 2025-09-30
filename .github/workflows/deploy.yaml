@@ -83,10 +83,11 @@ jobs:
 
         - name: Push Helm chart to Nexus
           run: |
-            CHART_FILE=$(ls ./packeged/*.tgz)
+            CHART_FULL_PATH=$(ls ./packeged/*.tgz)
+            CHART_FILE_NAME=$(basename $CHART_FULL_PATH)
             curl -u "$NEXUS_HELM_REPO_USER:$NEXUS_HELM_REPO_PASSWORD" \
-            --upload-file "$CHART_FILE" \
-            "$NEXUS_HELM_REPO/"
+            --upload-file "$CHART_FULL_PATH" \
+            "$NEXUS_HELM_REPO/$CHART_FILE_NAME"
 
   # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
