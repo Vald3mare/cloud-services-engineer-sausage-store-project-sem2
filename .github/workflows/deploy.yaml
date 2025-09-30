@@ -47,7 +47,7 @@ jobs:
             # Для каждого пересобранного образа 
             # устанавливаем тег latest, чтобы потом
             # на сервере и в docker-compose.yml не указывать версию образа:
-            tags: ${{ secrets.DOCKER_USER }}/sausage-backend:latest
+            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-backend:latest
             build-args: |
               VERSION=${{ github.sha }}
         - name: Push Frontend to DockerHub
@@ -55,13 +55,13 @@ jobs:
           with:
             context: ./frontend/
             push: true
-            tags: ${{ secrets.DOCKER_USER }}/sausage-frontend:latest
+            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-frontend:latest
         - name: Push Backend-report to DockerHub
           uses: docker/build-push-action@v4
           with:
             context: ./backend-report/
             push: true
-            tags: ${{ secrets.DOCKER_USER }}/sausage-backend-report:latest
+            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-backend-report:latest
   # Упаковываем helm-чарт и пушим его в Nexus 
   add_helm_chart_to_nexus:
       name: Add Helm Chart To Nexus
@@ -122,8 +122,5 @@ jobs:
             helm upgrade --install sausage-store sausage-nexus/sausage-store-chart \
               --namespace ${{ env.SAUSAGE_STORE_NAMESPACE }} \
               --create-namespace \
-              # ПЕРЕОПРЕДЕЛЕНИЕ ПАРАМЕТРОВ:
-              # 1. Host для Ingress (Пункт 5)
-              --set frontend.ingress.host=front-ВАШЕ_ИМЯ.2sem.students-projects.ru \
-              # 2. Передача токена Vault (Пункт 13, повышенная сложность)
+              --set frontend.ingress.host=front-vald3mar.2sem.students-projects.ru \
               --set global.vaultToken="${{ env.VAULT_TOKEN }}"
