@@ -21,7 +21,7 @@ spec:
     spec:
       containers:
       - name: backend-report
-        image: {{ .Values.backend-report.image }}
+        image: "{{ .Values.backend-report.image.repository }}:{{ .Values.backend-report.image.tag }}"
         ports:
           - containerPort: {{ .Values.backend-report.containerPort }}
         env:
