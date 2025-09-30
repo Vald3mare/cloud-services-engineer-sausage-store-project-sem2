@@ -12,15 +12,14 @@ env:
   SAUSAGE_STORE_NAMESPACE: ${{ secrets.SAUSAGE_STORE_NAMESPACE }}
   KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
   VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+  IMAGE_TAG: ${{ github.sha }}
 
 jobs:
-  # Сборка и пуш образов в докерхаб:
   build_and_push_to_docker_hub:
       name: Push Docker image to DockerHub
       runs-on: ubuntu-latest
       steps:
         - name: Check out the repo
-          # Получение исходного кода из репозитория:
           uses: actions/checkout@v3
 
         - name: Set up Docker Buildx
@@ -31,38 +30,30 @@ jobs:
           with:
             username: ${{ secrets.DOCKER_USERNAME }}
             password: ${{ secrets.DOCKER_PASSWORD }}
-            # Хорошо ли держать логин и пароль прямо в коде workflow?
-            # Нет, это нехорошо. Хранить пароль надо в Secrets.
+
         - name: Push Backend to DockerHub
-          # Одновременный билд и пуш образа в Docker Hub:
           uses: docker/build-push-action@v4
           with:
-            # Параметр context: ./backend/ указывает, что нужный Dockerfile 
-            # находится в ./backend/
             context: ./backend/
-            # Параметр push: true указывает, что образ нужно не только собрать,
-            # но и отправить на Docker Hub:
             push: true
-            # В параметре tags задаётся название и тег для образа.
-            # Для каждого пересобранного образа 
-            # устанавливаем тег latest, чтобы потом
-            # на сервере и в docker-compose.yml не указывать версию образа:
-            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-backend:latest
+            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-backend:${{ env.IMAGE_TAG }}
             build-args: |
-              VERSION=${{ github.sha }}
+              VERSION=${{ env.IMAGE_TAG }}
+
         - name: Push Frontend to DockerHub
           uses: docker/build-push-action@v4
           with:
             context: ./frontend/
             push: true
-            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-frontend:latest
+            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-frontend:${{ env.IMAGE_TAG }}
+
         - name: Push Backend-report to DockerHub
           uses: docker/build-push-action@v4
           with:
             context: ./backend-report/
             push: true
-            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-backend-report:latest
-  # Упаковываем helm-чарт и пушим его в Nexus 
+            tags: ${{ secrets.DOCKER_USERNAME }}/sausage-backend-report:${{ env.IMAGE_TAG }}
+
   add_helm_chart_to_nexus:
       name: Add Helm Chart To Nexus
       runs-on: ubuntu-latest
@@ -76,28 +67,31 @@ jobs:
           with:
             version: v3.12.0
 
-        - name: Clean Helm cache and Package chart
+        - name: Update Chart Version
           run: |
-            rm -rf $HOME/.cache/helm/repository
-            
+            # Используем sed для замены строки version: 0.1.0 на version: 0.1.0-<хеш_коммита>
+            # Это создаст уникальную версию для каждого запуска пайплайна
+            CHART_VERSION="0.1.0-${{ env.IMAGE_TAG }}"
+            sed -i "s/^version: .*/version: $CHART_VERSION/" ./sausage-store-chart/Chart.yaml
+            echo "New chart version is: $(cat ./sausage-store-chart/Chart.yaml | grep version:)"
 
+        - name: Package chart
+          run: |
             rm -rf ./sausage-store-chart/charts/*.tgz
             rm -rf ./sausage-store-chart/Chart.lock
-
             helm dependency update ./sausage-store-chart/
-
-            mkdir -p ./packeged/
-            helm package ./sausage-store-chart/ -d ./packeged/
+            
+            mkdir -p ./packaged/
+            helm package ./sausage-store-chart/ -d ./packaged/
 
         - name: Push Helm chart to Nexus
           run: |
-            CHART_FULL_PATH=$(ls ./packeged/*.tgz)
+            CHART_FULL_PATH=$(ls ./packaged/*.tgz)
             CHART_FILE_NAME=$(basename $CHART_FULL_PATH)
             curl -u "$NEXUS_HELM_REPO_USER:$NEXUS_HELM_REPO_PASSWORD" \
             --upload-file "$CHART_FULL_PATH" \
             "$NEXUS_HELM_REPO/$CHART_FILE_NAME"
 
-  # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
       name: Deploy Helm Chart To Kubernetes
       runs-on: ubuntu-latest
@@ -112,12 +106,10 @@ jobs:
           with:
             version: v3.12.0
             
-        - name: Set Kubeconfig (Настройка доступа к кластеру)
+        - name: Set Kubeconfig
           run: |
             echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
             export KUBECONFIG=kubeconfig.yaml
-            chmod 600 kubeconfig.yaml
-            kubectl config get-contexts # Проверка контекста
 
         - name: Add Nexus Helm Repository
           run: |
@@ -126,19 +118,20 @@ jobs:
               --password ${{ env.NEXUS_HELM_REPO_PASSWORD }}
             helm repo update
 
-        - name: Deploy Helm Chart (Установка/Обновление релиза)
+        - name: Deploy Helm Chart
           run: |
-            export KUBECONFIG=kubeconfig.yaml 
-            
+            export KUBECONFIG=kubeconfig.yaml
             helm repo update
             
+            # --- ИЗМЕНЕНО: Добавляем флаг --version и используем уникальный тег ---
             helm upgrade --install sausage-store sausage-nexus/sausage-store \
+              --version "0.1.0-${{ env.IMAGE_TAG }}" \
               --namespace ${{ env.SAUSAGE_STORE_NAMESPACE }} \
               --create-namespace \
               --set frontend.fqdn=front-vald3mar.2sem.students-projects.ru \
               --set frontend.image.repository=${{ secrets.DOCKER_USERNAME }}/sausage-frontend \
-              --set frontend.image.tag=1.0.0 \
+              --set frontend.image.tag=${{ env.IMAGE_TAG }} \
               --set backend.image.repository=${{ secrets.DOCKER_USERNAME }}/sausage-backend \
-              --set backend.image.tag=1.0.0 \
+              --set backend.image.tag=${{ env.IMAGE_TAG }} \
               --set backend-report.image.repository=${{ secrets.DOCKER_USERNAME }}/sausage-backend-report \
-              --set backend-report.image.tag=1.0.0
+              --set backend-report.image.tag=${{ env.IMAGE_TAG }}
