@@ -1,12 +1,10 @@
-# sausage-store-chart/charts/infra/templates/postgresql-deployment.yaml
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgresql
   namespace: {{ .Release.Namespace }}
   labels:
-    app.kubernetes.io/name: postgresql
+    app.kubernetes.ioio/name: postgresql
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: infra
 spec:
@@ -30,7 +28,8 @@ spec:
           - name: POSTGRES_USER
             value: "sausage_user"
           - name: POSTGRES_PASSWORD
-            value: {{ .Values.infra.postgresql.password | quote }} 
+            # --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+            value: {{ .Values.postgresql.password | quote }} 
         volumeMounts:
           - name: postgres-storage
             mountPath: /var/lib/postgresql/data 
