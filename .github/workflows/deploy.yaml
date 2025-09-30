@@ -91,6 +91,10 @@ jobs:
 
   # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
+      name: Deploy Helm Chart To Kubernetes
+      runs-on: ubuntu-latest
+      needs: add_helm_chart_to_nexus
+
       steps:
         - name: Check out the repo
           uses: actions/checkout@v3
@@ -100,6 +104,13 @@ jobs:
           with:
             version: v3.12.0
             
+        - name: Set Kubeconfig (Настройка доступа к кластеру)
+          run: |
+            echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
+            export KUBECONFIG=kubeconfig.yaml
+            chmod 600 kubeconfig.yaml
+            kubectl config get-contexts # Проверка контекста
+
         - name: Add Nexus Helm Repository
           run: |
             helm repo add sausage-nexus ${{ env.NEXUS_HELM_REPO }} \
@@ -109,15 +120,12 @@ jobs:
 
         - name: Deploy Helm Chart (Установка/Обновление релиза)
           run: |
-            echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
-            export KUBECONFIG=kubeconfig.yaml
-            chmod 600 kubeconfig.yaml
-          
-            kubectl config get-contexts
+            export KUBECONFIG=kubeconfig.yaml 
             
-            # 3. Обновление репозитория (повторно, на всякий случай)
+            # Обновление репозитория
             helm repo update
             
+            # Финальный деплой
             helm upgrade --install sausage-store sausage-nexus/sausage-store-chart \
               --namespace ${{ env.SAUSAGE_STORE_NAMESPACE }} \
               --create-namespace \
@@ -127,4 +135,4 @@ jobs:
               --set backend.image.repository=${{ secrets.DOCKER_USERNAME }}/sausage-backend \
               --set backend.image.tag=1.0.0 \
               --set backend-report.image.repository=${{ secrets.DOCKER_USERNAME }}/sausage-backend-report \
-              --set backend-report.image.tag=1.0.0 
+              --set backend-report.image.tag=1.0.0
