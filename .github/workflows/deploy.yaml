@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  NEXUS_HELM_REPO: ${{ secrets.NEXUS_BASE_URL }}
+  NEXUS_HELM_REPO: ${{ secrets.NEXUS_BASE_URL }}/repository/sausage-store-helm-vald3mar
   NEXUS_HELM_REPO_USER: ${{ secrets.NEXUS_HELM_REPO_USER }}
   NEXUS_HELM_REPO_PASSWORD: ${{ secrets.NEXUS_HELM_REPO_PASSWORD }}
   SAUSAGE_STORE_NAMESPACE: ${{ secrets.SAUSAGE_STORE_NAMESPACE }}
@@ -84,10 +84,13 @@ jobs:
 
         - name: Push Helm chart to Nexus
           run: |
-            helm plugin install https://github.com/chartmuseum/helm-push
-            helm repo add chartmuseum ${{ secrets.NEXUS_BASE_URL }} --username ${{ secrets.NEXUS_HELM_REPO_USER }} --password ${{ secrets.NEXUS_HELM_REPO_PASSWORD }}
+            helm plugin install https://github.com/chartmuseum/helm-push --version v0.10.0
+            helm repo add sausage-nexus-vald3mar ${{ env.NEXUS_HELM_REPO }} \
+              --username ${{ env.NEXUS_HELM_REPO_USER }} \
+              --password ${{ env.NEXUS_HELM_REPO_PASSWORD }}
+
             cd sausage-store-chart
-            helm cm-push sausage-store-*.tgz "${{ env.NEXUS_HELM_REPO }}" --context-path="/repository/sausage-store-helm-vald3mar" --username="${{ env.NEXUS_HELM_REPO_USER }}" --password="${{ env.NEXUS_HELM_REPO_PASSWORD }}"
+            helm cm-push sausage-store-*.tgz sausage-nexus-vald3mar
 
   # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
@@ -112,7 +115,7 @@ jobs:
 
         - name: Add Nexus Helm Repository
           run: |
-            helm repo add sausage-nexus ${{ env.NEXUS_HELM_REPO }}/repository/hosted-helm-sausage-kuzko \
+            helm repo add sausage-nexus ${{ env.NEXUS_HELM_REPO }}/repository/sausage-store-helm-vald3mar \
               --username ${{ env.NEXUS_HELM_REPO_USER }} \
               --password ${{ env.NEXUS_HELM_REPO_PASSWORD }}
             helm repo update
