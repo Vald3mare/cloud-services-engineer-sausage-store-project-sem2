@@ -106,9 +106,10 @@ jobs:
 
         - name: Set Kubeconfig (Настройка доступа к кластеру)
           run: |
-            mkdir -p ~/.kube
-            echo "${{ secrets.KUBE_CONFIG }}" > ~/.kube/config
-            chmod 600 ~/.kube/config
+            echo "${{ secrets.KUBE_CONFIG }}" > kubeconfig.yaml
+            export KUBECONFIG=kubeconfig.yaml
+            chmod 600 kubeconfig.yaml
+            kubectl config get-contexts
 
         - name: Add Nexus Helm Repository
           run: |
@@ -123,4 +124,4 @@ jobs:
               --namespace ${{ env.SAUSAGE_STORE_NAMESPACE }} \
               --create-namespace \
               --set frontend.ingress.host=front-vald3mar.2sem.students-projects.ru \
-              --set global.vaultToken="${{ env.VAULT_TOKEN }}"
+              --set global.vaultToken="${{ env.VAULT_TOKEN }}" 
