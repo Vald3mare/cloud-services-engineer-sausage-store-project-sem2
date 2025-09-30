@@ -8,7 +8,7 @@ metadata:
 spec:
   type: ClusterIP 
   ports:
-    - port: {{ .Values.frontend.service.port }}
-      targetPort: {{ .Values.frontend.containerPort }}
+    - port: {{ .Values.service.port }}
+      targetPort: {{ .Values.containerPort }}
   selector:
     app: frontend

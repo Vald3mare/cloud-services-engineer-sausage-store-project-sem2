@@ -6,4 +6,4 @@ metadata:
   labels:
     app.kubernetes.io/component: backend-report
 data:
-  PORT: {{ .Values.backend-report.containerPort | quote }}
+  PORT: {{ .Values.containerPort | quote }}

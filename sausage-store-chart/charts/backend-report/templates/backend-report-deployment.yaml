@@ -1,3 +1,4 @@
+# sausage-store-chart/charts/backend-report/templates/backend-report-deployment.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -5,12 +6,12 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: sausage-backend-report
-    app.kubernetesio/component: backend-report
+    app.kubernetes.io/component: backend-report
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   strategy:
-    type: {{ .Values.backend-report.strategy.type }}
-  replicas: {{ .Values.backend-report.replicas }}
+    type: {{ .Values.strategy.type }}
+  replicas: {{ .Values.replicas }}
   selector:
     matchLabels:
       app: backend-report
@@ -21,11 +22,10 @@ spec:
     spec:
       containers:
       - name: backend-report
-        image: "{{ .Values.backend-report.image.repository }}:{{ .Values.backend-report.image.tag }}"
+        image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         ports:
-          - containerPort: {{ .Values.backend-report.containerPort }}
+          - containerPort: {{ .Values.containerPort }}
         env:
-          # PORT из ConfigMap
           - name: PORT
             valueFrom:
               configMapKeyRef:
@@ -38,24 +38,8 @@ spec:
                 key: DB
         resources:
           requests:
-            cpu: {{ .Values.backend-report.resources.requests.cpu }}
-            memory: {{ .Values.backend-report.resources.requests.memory }}
+            cpu: {{ .Values.resources.requests.cpu }}
+            memory: {{ .Values.resources.requests.memory }}
           limits:
-            cpu: {{ .Values.backend-report.resources.limits.cpu }}
-            memory: {{ .Values.backend-report.resources.limits.memory }}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-report
-  namespace: {{ .Release.Namespace }}
-  labels:
-    app.kubernetes.io/name: sausage-backend-report
-    app.kubernetes.io/component: backend-report
-spec:
-  type: ClusterIP
-  ports:
-    - port: 80
-      targetPort: {{ .Values.backend-report.containerPort }}
-  selector:
-    app: backend-report
+            cpu: {{ .Values.resources.limits.cpu }}
+            memory: {{ .Values.resources.limits.memory }}

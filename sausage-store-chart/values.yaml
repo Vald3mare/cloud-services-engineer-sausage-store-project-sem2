@@ -79,7 +79,7 @@ backend:
             cpu: "1"
             memory: "1Gi"
 
-backend-report:
+backend_report:
   replicas: 1
   strategy:
     type: Recreate 
