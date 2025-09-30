@@ -5,7 +5,7 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: sausage-backend-report
-    app.kubernetes.io/component: backend-report
+    app.kubernetesio/component: backend-report
     app.kubernetes.io/instance: {{ .Release.Name }}
 spec:
   strategy:
@@ -43,3 +43,19 @@ spec:
           limits:
             cpu: {{ .Values.backend-report.resources.limits.cpu }}
             memory: {{ .Values.backend-report.resources.limits.memory }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-report
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: sausage-backend-report
+    app.kubernetes.io/component: backend-report
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: {{ .Values.backend-report.containerPort }}
+  selector:
+    app: backend-report
