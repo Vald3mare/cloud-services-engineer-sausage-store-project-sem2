@@ -1,24 +1,35 @@
+# sausage-store-chart/charts/infra/templates/mongodb-init-job.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: mongodb-init-{{ .Release.Name | trunc 4 }}
+  name: {{ .Release.Name }}-mongodb-init
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": "post-install" 
-    "helm.sh/hook-weight": "5"
-    "helm.sh/hook-delete-policy": "hook-succeeded"
+    # Этот хук заставляет Job запускаться после установки или обновления релиза
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
 spec:
   template:
     spec:
-      restartPolicy: OnFailure
+      restartPolicy: Never
       containers:
-      - name: mongo-shell
-        image: mongo:4.4
-        command: ["sh", "-c"]
-        args:
-          - |
-            sleep 10 && 
-            mongo "mongodb:{{ .Values.infra.mongodb.containerPort }}/admin" \
-                  -u {{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_USERNAME }} \
-                  -p {{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }} \
-                  --eval "db.createUser({ user: 'reporter', pwd: '{{ .Values.infra.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }}', roles: [{ role: 'readWrite', db: 'sausage-db' }] });"
+        - name: mongodb-init-check
+          image: mongo:4.4
+          command: ['mongo']
+          args:
+            - "mongodb://$(MONGO_ROOT_USERNAME):$(MONGO_ROOT_PASSWORD)@mongodb:27017/admin"
+            - "--eval"
+            - "db.runCommand({ ping: 1 })"
+          env:
+            - name: MONGO_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-root-username
+            - name: MONGO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mongodb-secret
+                  key: mongo-root-password
+  backoffLimit: 4
