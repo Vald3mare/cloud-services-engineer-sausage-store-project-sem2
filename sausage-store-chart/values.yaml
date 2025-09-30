@@ -108,7 +108,22 @@ infra:
     password: "sausagepassword"
   ### Опишите необходимые переменные для развертывания PostgresQL в кластере Kubernetes
   mongodb:
-    env:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: rootpassword
-    containerPort: 27017
+  replicas: 1
+  containerPort: 27017
+
+  image:
+    repository: mongo
+    tag: "4.4"
+    pullPolicy: IfNotPresent
+  
+  auth:
+    username: "admin"
+    password: "changeme"
+
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
