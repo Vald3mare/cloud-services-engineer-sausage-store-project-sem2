@@ -5,12 +5,11 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: mongodb
-    app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/component: infra
 spec:
-  type: ClusterIP 
-  ports:
-    - port: {{ .Values.infra.mongodb.containerPort }}
-      targetPort: {{ .Values.infra.mongodb.containerPort }}
   selector:
     app: mongodb
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: {{ .Values.mongodb.containerPort }}
