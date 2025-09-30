@@ -123,5 +123,10 @@ jobs:
             helm upgrade --install sausage-store sausage-nexus/sausage-store-chart \
               --namespace ${{ env.SAUSAGE_STORE_NAMESPACE }} \
               --create-namespace \
-              --set frontend.ingress.host=front-vald3mar.2sem.students-projects.ru \
-              --set global.vaultToken="${{ env.VAULT_TOKEN }}" 
+              --set frontend.fqdn=front-vald3mar.2sem.students-projects.ru \
+              --set frontend.image.repository=${{ env.DOCKER_USERNAME }}/sausage-store/sausage-frontend \
+              --set frontend.image.tag=1.0.0 \
+              --set backend.image.repository=${{ env.DOCKER_USERNAME }}/sausage-store/sausage-backend \
+              --set backend.image.tag=1.0.0 \
+              --set backend-report.image.repository=${{ env.DOCKER_USERNAME }}/sausage-store/sausage-backend-report \
+              --set backend-report.image.tag=1.0.0 
