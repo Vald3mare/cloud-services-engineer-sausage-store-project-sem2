@@ -24,6 +24,10 @@ frontend:
     pathType: Prefix
 
 backend:
+  annotations:
+    path: /actuator/prometheus
+    port: "8080"
+    scrape: "true"
   replicas: 1
   containerPort: 8080
   image:
